@@ -1,0 +1,39 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - '*.*.*'
+            - '*.*.*-dev'
+jobs:
+    build:
+        runs-on: windows-latest
+        steps:
+            -   name: git checkout
+                uses: actions/checkout@v2
+
+            -   name: Add msbuild to PATH
+                uses: microsoft/setup-msbuild@v1
+
+            -   name: Setup nuget
+                uses: nuget/setup-nuget@v1
+
+            -   name: Nuget restore
+                run: nuget restore
+
+            -   name: Build solution
+                run: msbuild /p:Configuration=Release
+
+            -   name: Zip build result
+                shell: bash
+                run: |
+                    7z a -tzip "CoH2ReplaySaver.zip" "./CoH2ReplaySaver/bin/Release/*"
+
+            # Release tagged versions
+            -   name: Release
+                uses: softprops/action-gh-release@v1
+                if: startsWith(github.ref, 'refs/tags/')
+                with:
+                    files: CoH2ReplaySaver.zip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
